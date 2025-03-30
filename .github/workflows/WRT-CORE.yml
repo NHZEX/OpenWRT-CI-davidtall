@@ -246,26 +246,36 @@ jobs:
 
           echo "WRT_KVER=${KVER:-none}" >> $GITHUB_ENV
 
-      - name: Release Firmware
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: ${{env.CI_NAME}}-${{env.WRT_CONFIG}}_${{env.WRT_DATE}}
-          files: ./wrt/upload/*.*
-          body: |
+      - name: Prepare Release Body
+        run: |
+          echo "WRT_PLUGINS=$(grep -oP "luci-app(-[a-zA-Z0-9]{1,}){1,}" ./firmware/*.manifest | awk -F":" '{print $NF}')" >> $GITHUB_ENV
+          cat << EOF > release_body.txt
             这是个平台固件包，内含多个设备！
             请注意选择你需要的设备固件！
             不要问，刷就完事了！
             京东云亚瑟 AX1800 Pro DAED 使用方法详见恩山帖子: https://www.right.com.cn/forum/thread-8402269-1-1.html
             MTK和QCA全系带开源硬件加速，别问了！
+            Fork https://github.com/davidtall/OpenWRT-CI
+
+            内核版本：${WRT_KVER}
             
-            内核版本：${{env.WRT_KVER}}
+            WIFI名称：${WRT_SSID}
+            WIFI密码：${WRT_WORD}
 
-            WIFI名称：${{env.WRT_SSID}}
-            WIFI密码：${{env.WRT_WORD}}
+            源码：${WRT_REPO}
+            分支：${WRT_BRANCH}
+            配置：${WRT_CONFIG}
+            平台：${WRT_TARGET}
+            地址：${WRT_IP}
+            密码：${WRT_PW}
+            插件：
+            ${WRT_PLUGINS}
+            EOF
+          echo release_body.txt
 
-            源码：${{env.WRT_REPO}}
-            分支：${{env.WRT_BRANCH}}
-            配置：${{env.WRT_CONFIG}}
-            平台：${{env.WRT_TARGET}}
-            地址：${{env.WRT_IP}}
-            密码：${{env.WRT_PW}}
+      - name: Release Firmware
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{env.CI_NAME}}-${{env.WRT_CONFIG}}_${{env.WRT_DATE}}
+          files: ./wrt/upload/*.*
+          body_path: ./release_body.txt
